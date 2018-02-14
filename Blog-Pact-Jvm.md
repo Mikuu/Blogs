@@ -368,6 +368,7 @@ public class PactJunitDSLJsonBodyTest {
 * 对契约中Response Body的内容，使用JsonBody代替简单的字符串，可以让你的代码易读性更好；
 * JsonBody提供了强大的Check By Type和Check By Value的功能，让你可以控制对Provider的Response的测试精度。比如，你是要确保对于契约中的某个字段，Provider的返回必须是具体某个数值（check by Value），或着只要数据类型相同就可以（check by type），比如都是String或者Int。你甚至可以直接使用正则表达式来做更加灵活的验证；
 * 目前支持的匹配验证方法：
+
 | method | description |
 |--------|-------------|
 | string, stringValue | Match a string value (using string equality) |
@@ -389,6 +390,7 @@ public class PactJunitDSLJsonBodyTest {
 | includesStr | Will match strings containing the provided string |
 | equalsTo | Will match using equals |
 | matchUrl | Defines a matcher for URLs, given the base URL path and a sequence of path fragments. The path fragments could be strings or regular expression matchers |
+
 * 对于Array和Map这样的数据结构，DSL也有相应匹配验证方法，我这里就不罗列了，请参考[官网的介绍](https://github.com/DiUS/pact-jvm/tree/master/pact-jvm-consumer-junit#user-content-ensuring-all-items-in-a-list-match-an-example-220)；
 
 
