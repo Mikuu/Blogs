@@ -396,7 +396,7 @@ public class PactJunitDSLJsonBodyTest {
 
 
 
-###执行Miku端的测试
+### 执行Miku端的测试
 Test Case准备好后，我们就可以执行测试了。因为我们实际上是用的Junit的框架，所以和执行一般的单元测试是一样的：
 ```commandline
 ./gradlew :example-consumer-miku:clean test
@@ -404,8 +404,8 @@ Test Case准备好后，我们就可以执行测试了。因为我们实际上�
 成功执行后，你就可以在`Pacts\Miku`下面找到所有测试生成的契约文件。
 
 
-###发布契约文件到Pact Broker
-###Provider端的测试
+### 发布契约文件到Pact Broker
+### Provider端的测试
 
 ## 相关的Gradle配置
 ## Provider与Nanoha间的契约测试
