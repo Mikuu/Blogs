@@ -366,7 +366,7 @@ public class PactJunitDSLJsonBodyTest {
 
 当然，Junit DSL的强大之处绝不仅仅是让你多写几个Test Case， 通过使用PactDslJsonBody和Lambda DSL你可以更好的编写你的契约测试文件：
 * 对契约中Response Body的内容，使用JsonBody代替简单的字符串，可以让你的代码易读性更好；
-* JsonBody提供了强大的Check By Type和Check By Value的功能，让你可以控制对Provider的Response的测试精度。比如，你是要确保对于契约中的某个字段，Provider的返回必须是具体某个数值（check by Value），或着只要数据类型相同就可以（check by type），比如都是String或者Int。你甚至可以直接使用正则表达式来做更加灵活的验证；
+* JsonBody提供了强大的Check By Type和Check By Value的功能，让你可以控制对Provider的Response测试精度。比如，对于契约中的某个字段，你是要确保Provider的返回必须是具体某个数值（check by Value），还是只要数据类型相同就可以（check by type），比如都是String或者Int。你甚至可以直接使用正则表达式来做更加灵活的验证；
 * 目前支持的匹配验证方法：
 
 | method | description |
