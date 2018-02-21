@@ -552,10 +552,11 @@ project(':example-provider') {
     }
 ```
 Gradle的配置也是非常的简单的，Provider，Miku和Nanoha作为三个单独的应用，都是独立配置的，其中的一些关键信息：
-- `systemProperties['pact.rootDir']` 指定了我们生存契约文件的路径；
-- Miku中的`pact { ... }`定义了我们Pact Broker的服务器地址，以及我们访问时需要的认证信息。PS，如果你想通过浏览器访问Broker，比如看上面的关系图，你也是需要这个认证信息的。这里的配置使用的是变量，真正的用户名和密码在哪儿？不告诉你，自己找找吧(￣▽￣)~*
+- `systemProperties['pact.rootDir']` 指定了我们生成契约文件的路径；
+- Miku中的`pact { ... }`定义了我们Pact Broker的服务器地址，以及我们访问时需要的认证信息。
+> 如果你想通过浏览器访问Broker，比如看上面的关系图，你也是需要这个认证信息的。这里的配置使用的是变量，真正的用户名和密码在哪儿？不告诉你，自己在代码里面找找吧(￣▽￣)~*
 - Provider的`hasPactWith()`和`hasPactsWith()`指定了执行`PactVerify`时会去搜索的本地路径，相应的，`hasPactsFromPactBroker`则是指定了Broker的服务器地址；
-- *为什么要注释掉Nanoha的契约文件路径呢？因为目前我们还没有生成Nanoha的契约文件，如果不注释掉它们的话，测试会报找不到文件的错误。我们可以在之后生成完Nanoha的契约文件后，再打开注释；
+- 为什么要注释掉Nanoha的契约文件路径呢？因为目前我们还没有生成Nanoha的契约文件，如果不注释掉它们的话，测试会报找不到文件的错误。我们可以在之后生成完Nanoha的契约文件后，再打开注释；
 
 ## Provider与Nanoha间的契约测试
 Nanoha端的契约测试和Miku端大同小异，只是我们会在Nanoha端使用ProviderState的特性。关于ProviderState的具体含义，大家可以参见[官网的介绍](https://docs.pact.io/documentation/provider_states.html).
