@@ -393,9 +393,6 @@ public class PactJunitDSLJsonBodyTest {
 
 * 对于Array和Map这样的数据结构，DSL也有相应匹配验证方法，我这里就不罗列了，请参考[官网的介绍](https://github.com/DiUS/pact-jvm/tree/master/pact-jvm-consumer-junit#user-content-ensuring-all-items-in-a-list-match-an-example-220)；
 
-
-
-
 ### 执行Miku端的测试
 Test Case准备好后，我们就可以执行测试了。因为我们实际上是用的Junit的框架，所以和执行一般的单元测试是一样的：
 ```commandline
@@ -403,12 +400,165 @@ Test Case准备好后，我们就可以执行测试了。因为我们实际上�
 ```
 成功执行后，你就可以在`Pacts\Miku`下面找到所有测试生成的契约文件。
 
-
 ### 发布契约文件到Pact Broker
+契约文件，也就是`Pacts\Miku`下面的那些JSON文件，可以用来驱动Provider端的契约测试。由于我们的示例把Consumer和Provider都放在了同一个Codebase下面，所以`	Pacts\Miku`下面的契约文件对Provider是直接可见的，而真实的项目中，往往不是这样，你需要通过某种途径把契约文件从Consumer端发送给Provider端。你可以选择把契约文件SCP到Provider的测试服务器去，也可以选择使用中间文件服务器来共享契约文件，你甚至可以直接人肉发邮件把契约文件扔给Provider的团队，然后告诉他们“这是我们的契约，你们看着办吧~”（当然，这样很Low ...），这些都是可行的。显然，Pact提供了更加优雅的方式，那就是使用[Pact Broker](https://github.com/pact-foundation/pact_broker)。
+
+当你准备好Broker后，就可以用它来方便的实现真正的消费者驱动的契约测试了。
+> 好吧，我得承认，“准备”这两个字我用得有些轻描淡写，实际的情况是你可能需要费一番周折才能弄好一个Broker服务。目前有好些方法可以搭建Broker服务，你可以直接下载官网的源码然后自己折腾，也可以使用Docker来个一键了事，更可以直接找Pact官方申请一个公共的Broker，当然，那样做就得暴露你的契约给第三方服务器，真实的产品项目多半是不行的，但如果只是学习，那就事半功倍了，比如我们当前的这个示例就是如此。
+
+将契约文件上传到Broker服务器非常简单：
+```commandline
+./gradlew :example-consumer-miku:pactPublish
+```
+然后你会在命令行下面看到类似这样的输出：
+```commandline
+> Task :example-consumer-miku:pactPublish 
+Publishing JunitDSLConsumer1-ExampleProvider.json ... HTTP/1.1 200 OK
+Publishing JunitDSLJsonBodyConsumer-ExampleProvider.json ... HTTP/1.1 200 OK
+Publishing JunitDSLLambdaJsonBodyConsumer-ExampleProvider.json ... HTTP/1.1 200 OK
+Publishing BaseConsumer-ExampleProvider.json ... HTTP/1.1 200 OK
+Publishing JunitRuleConsumer-ExampleProvider.json ... HTTP/1.1 200 OK
+Publishing JunitRuleMultipleInteractionsConsumer-ExampleProvider.json ... HTTP/1.1 200 OK
+Publishing JunitDSLConsumer2-ExampleProvider.json ... HTTP/1.1 200 OK
+```
+上传完成之后，你就可以在我们的[Broker服务器](https://ariman.pact.dius.com.au/)上面看到对于的契约内容了。
+![image](images/pact-jvm/pact-broker.png)
+> 值得说明的是，你可以看到上面我们有7个Consumer对应1个Provdier。在真实的项目中，不应该是这样的，因为现在我们实际上只有一个Consumer Miku。我只是在不同的契约文件中对Consumer的名字做了不同的命名，目的只是展示一下Broker的这个漂亮的调用关系图。这只是一个示例，仅此而已。
+
+至此，Pact测试中，Consumer端的工作我们就全部搞定了，剩下的就是Provider的活了。
+
 ### Provider端的测试
+在Provider端，我们使用Gradle的Plugin来执行契约测试，非常的简单，不需要写一行测试代码：
+```commandline
+./gradlew :example-provider:pactVerify
+```
+> 在Provider端执行契约测试之前，我们需要先启动Provider的应用。虽然通过gradle我们可以配置自动关停应用，但对于初学者，我还是建议大家多手动捣鼓捣鼓，不然你都不知道这个测试是怎么个跑法。啥？不知道怎么启动Provider？自己去本文的开头部分找去 ...
+
+然后，你可以在命令行下面看到类似这样的输出：
+```commandline
+Arimans-MacBook-Pro:pact-jvm-example ariman$ ./gradlew :example-provider:pactVerify
+
+> Task :example-provider:pactVerify_ExampleProvider
+
+Verifying a pact between Miku - Base contract and ExampleProvider
+  [Using File /Users/ariman/Workspace/Pacting/pact-jvm-example/Pacts/Miku/BaseConsumer-ExampleProvider.json]
+  Given
+         WARNING: State Change ignored as there is no stateChange URL
+  Consumer Miku
+    returns a response which
+      has status code 200 (OK)
+      includes headers
+        "Content-Type" with value "application/json;charset=UTF-8" (OK)
+      has a matching body (OK)
+  Given
+         WARNING: State Change ignored as there is no stateChange URL
+  Pact JVM example Pact interaction
+    returns a response which
+      has status code 200 (OK)
+      includes headers
+        "Content-Type" with value "application/json;charset=UTF-8" (OK)
+      has a matching body (OK)
+
+  ...
+
+  Verifying a pact between JunitRuleMultipleInteractionsConsumer and ExampleProvider
+    [from Pact Broker https://ariman.pact.dius.com.au/pacts/provider/ExampleProvider/consumer/JunitRuleMultipleInteractionsConsumer/version/1.0.0]
+    Given
+           WARNING: State Change ignored as there is no stateChange URL
+    Miku
+      returns a response which
+        has status code 200 (OK)
+        includes headers
+          "Content-Type" with value "application/json;charset=UTF-8" (OK)
+        has a matching body (OK)
+    Given
+           WARNING: State Change ignored as there is no stateChange URL
+    Nanoha
+      returns a response which
+        has status code 200 (OK)
+        includes headers
+          "Content-Type" with value "application/json;charset=UTF-8" (OK)
+        has a matching body (OK)
+
+```
+从上面的结果可以看出，我们的测试既使用了来自本地的契约文件，也使用了来自Broker的契约文件。
+> 由于我们示例使用的Broker服务器是公共的，任何调戏我们这个示例应用的小伙伴都能上传他们自己的契约文件，其中难免会存在错误的契约。所以，如果你发现来自Broker的契约让你的测试挂掉了，请不要惊慌哟。当然，因为是公共服务器，我会不定时的清空里面的契约文件，所以哪天你要是发现你之前上传的契约文件没有了，也不必大惊小怪。
 
 ## 相关的Gradle配置
+OK，Provider和Miku感情故事我们就讲完了。在讲Nanoha之前，先让我们来看看Gradle的一些配置内容：
+```groovy
+project(':example-consumer-miku') {
+    ...
+    test {
+        systemProperties['pact.rootDir'] = "$rootDir/Pacts/Miku"
+    }
+
+    pact {
+            publish {
+                pactDirectory = "$rootDir/Pacts/Miku"
+                pactBrokerUrl = mybrokerUrl
+                pactBrokerUsername = mybrokerUser
+                pactBrokerPassword = mybrokerPassword
+            }
+    }
+    ...
+}
+
+
+project(':example-consumer-nanoha') {
+    ...
+    test {
+        systemProperties['pact.rootDir'] = "$rootDir/Pacts/Nanoha"
+    }
+    ...
+}
+
+import java.net.URL
+
+project(':example-provider') {
+    ...
+    pact {
+            serviceProviders {
+                ExampleProvider {
+                    protocol = 'http'
+                    host = 'localhost'
+                    port = 8080
+                    path = '/'
+
+                    // Test Pacts from local Miku
+                    hasPactWith('Miku - Base contract') {
+                        pactSource = file("$rootDir/Pacts/Miku/BaseConsumer-ExampleProvider.json")
+                    }
+
+                    hasPactsWith('Miku - All contracts') {
+                        pactFileLocation = file("$rootDir/Pacts/Miku")
+                    }
+
+                    // Test Pacts from Pact Broker
+                    hasPactsFromPactBroker(mybrokerUrl, authentication: ['Basic', mybrokerUser, mybrokerPassword])
+
+                    // Test Pacts from local Nanoha
+    //                hasPactWith('Nanoha - With Nantionality') {
+    //                    pactSource = file("$rootDir/Pacts/Nanoha/ConsumerNanohaWithNationality-ExampleProvider.json")
+    //                }
+
+    //                hasPactWith('Nanoha - No Nantionality') {
+    //                    stateChangeUrl = new URL('http://localhost:8080/pactStateChange')
+    //                    pactSource = file("$rootDir/Pacts/Nanoha/ConsumerNanohaNoNationality-ExampleProvider.json")
+    //                }
+                }
+            }
+        }
+    }
+```
+Gradle的配置也是非常的简单的，Provider，Miku和Nanoha作为三个单独的应用，都是独立配置的，其中的一些关键信息：
+- `systemProperties['pact.rootDir']` 指定了我们生存契约文件的路径；
+- Miku中的`pact { ... }`定义了我们Pact Broker的服务器地址，以及我们访问时需要的认证信息。PS，如果你想通过浏览器访问Broker，比如看上面的关系图，你也是需要这个认证信息的。这里的配置使用的是变量，真正的用户名和密码在哪儿？不告诉你，自己找找吧(￣▽￣)~*
+- Provider的`hasPactWith()`和`hasPactsWith()`指定了执行`PactVerify`时会去搜索的本地路径，相应的，`hasPactsFromPactBroker`则是指定了Broker的服务器地址；
+- *为什么要注释掉Nanoha的契约文件路径呢？因为目前我们还没有生成Nanoha的契约文件，如果不注释掉它们的话，测试会报找不到文件的错误。我们可以在之后生成完Nanoha的契约文件后，再打开注释；
+
 ## Provider与Nanoha间的契约测试
+
 ## 验证我们的测试
 
 
