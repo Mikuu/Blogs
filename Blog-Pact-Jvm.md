@@ -2,7 +2,7 @@
 
 如今，契约测试已经逐渐成为测试圈中一个炙手可热的话题，特别是在微服务大行其道的行业背景下，越来越多的团队开始关注服务之间的契约及其契约测试。
 
-从2016年开始我就在Thoughtworks和QA Community里推广契约测试，收到了不错的成效，期间有不少同学和我讨论过如何上手契约测试，发现网上介绍契约测试的讲义、博客不乏其数（当然，质量也参差不齐），可手把手教你写契约测试的文章却几乎没有，原因恐怕就是契约测试的特性吧。契约测试是架设在消费者和服务者之间的一种比较特殊的测试活动，如果你只是想自己学习而又没有合适的项目环境，那你得自己先准备适当的消费者和服务者程序源代码，然后再开始写契约测试，而不是像写个Selenium测试那样，两三行代码就可以随随便便地调戏度娘。～(￣▽￣～)
+从2015年开始我就在Thoughtworks和QA Community里推广契约测试，收到了不错的成效，期间有不少同学和我讨论过如何上手契约测试，发现网上介绍契约测试的讲义、博客不乏其数（当然，质量也参差不齐），可手把手教你写契约测试的文章却几乎没有，原因恐怕就是契约测试的特性吧。契约测试是架设在消费者和服务者之间的一种比较特殊的测试活动，如果你只是想自己学习而又没有合适的项目环境，那你得自己先准备适当的消费者和服务者程序源代码，然后再开始写契约测试，而不是像写个Selenium测试那样，两三行代码就可以随随便便地调戏度娘。～(￣▽￣～)
 
 所以，我花了些时间磨叽出了这片文章……
 
@@ -15,7 +15,7 @@ OK，以下开始正文！
 契约测试的精髓在于消费者驱动，实践消费者驱动契约测试的工具主要有Pact，Pacto 和 Spring Cloud Contract，其中Pact是目前最为推荐的，我下面的例子都将使用Pact来练习。[Pact](https://docs.pact.io/)最早是用Ruby实现的，目前已经扩展支撑Java，.NET，Javascript，Go，Swift，Python和PHP，其中[Java（JVM）](https://github.com/DiUS/pact-jvm)是我们目前项目中使用最频繁的，所以我的例子亦都是基于PACT JVM来实现（观众A:我们都用Pyhton，你丫给我说Java(╯°□°）╯︵┻━┻）
 
 ## 示例源码
-大家可以从Github上获取本文示例的[源码](https://github.com/Mikuu/Pact-JVM-Example)，也可以从PACT JVM官网上面找到对应的PACT-JVM-Example[链接](https://github.com/DiUS/pact-jvm#links)
+大家可以从Github上获取[本文示例的源码](https://github.com/Mikuu/Pact-JVM-Example)，也可以从PACT JVM官网上面找到对应的PACT-JVM-Example[链接](https://github.com/DiUS/pact-jvm#links)
 
 ## 示例应用
 示例应用非常简单，一个服务提供者Provider，两个服务消费者Miku和Nanoha（啥？你不知道Miku和Nanoha是什么？......问度娘吧......(～o￣3￣)～......）。
@@ -57,7 +57,7 @@ Miku和Nanoha做的事情基本一样，差别就是Nanoha会去多拿`.national
 我们先从Provider和Miku`之间`的契约测试开始。
 > 请注意"之间"这个关键词，当我们谈论契约测试时，一定要明确它是建立在某一对Provider和Consumer之间的测试活动。没有Provider，Consumer做不了契约测试；没有Consumer，Provider不需要做契约测试。
 
-###编写消费者Miku端的测试案例
+### 编写消费者Miku端的测试案例
 目前，PACT JVM在消费者端的契约测试主要有三种写法：
 * 基本的Junit
 * Junit Rule
@@ -558,6 +558,14 @@ Gradle的配置也是非常的简单的，Provider，Miku和Nanoha作为三个�
 - *为什么要注释掉Nanoha的契约文件路径呢？因为目前我们还没有生成Nanoha的契约文件，如果不注释掉它们的话，测试会报找不到文件的错误。我们可以在之后生成完Nanoha的契约文件后，再打开注释；
 
 ## Provider与Nanoha间的契约测试
+Nanoha端的契约测试和Miku端大同小异，只是我们会在Nanoha端使用ProviderState的特性。关于ProviderState的具体含义，大家可以参见[官网的介绍](https://docs.pact.io/documentation/provider_states.html).
+
+### 准备Provider端的ProviderState
+### Nanoha端的契约测试
+### Provider端的契约测试
+#### 启动Provider的应用
+#### 修改Gradle配置文件
+#### 执行契约测试
 
 ## 验证我们的测试
 
