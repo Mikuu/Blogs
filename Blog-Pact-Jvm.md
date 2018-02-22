@@ -562,13 +562,227 @@ Gradle的配置也是非常的简单的，Provider，Miku和Nanoha作为三个�
 Nanoha端的契约测试和Miku端大同小异，只是我们会在Nanoha端使用ProviderState的特性。关于ProviderState的具体含义，大家可以参见[官网的介绍](https://docs.pact.io/documentation/provider_states.html).
 
 ### 准备Provider端的ProviderState
+Provider会返回一个`.nationality`的字段，在真实项目里，它的值可能来自数据库（当然，也可能来自更下一层的API调用）。在我们的示例里面，简单起见，直接使用了Static的属性来模拟数据的存储：
+`provider.ulti.Nationality`
+```java
+public class Nationality {
+    private static String nationality = "Japan";
+
+    public static String getNationality() {
+        return nationality;
+    }
+
+    public static void setNationality(String nationality) {
+        Nationality.nationality = nationality;
+    }
+}
+```
+然后，通过修改`.nationality`就可以模拟对存储数据的修改。所以，我们定义了一个控制器`pactController`，在`/pactStateChange`上面接受POST的reqeust来修改`.nationality`：
+`provider.PactController`
+```java
+@Profile("pact")
+@RestController
+public class PactController {
+
+    @RequestMapping(value = "/pactStateChange", method = RequestMethod.POST)
+    public void providerState(@RequestBody PactState body) {
+        switch (body.getState()) {
+            case "No nationality":
+                Nationality.setNationality(null);
+                System.out.println("Pact State Change >> remove nationality ...");
+                break;
+            case "Default nationality":
+                Nationality.setNationality("Japan");
+                System.out.println("Pact Sate Change >> set default nationality ...");
+                break;
+        }
+    }
+}
+```
+因为这个控制器只是用来测试的，所以它应该**只在非产品环境下才能可见**，所以我们使用了一个`pact`的Profile Annotation来限制这个控制器只能在使用`pact`的profile时才能可见。
+
+**OK，总结一下就是：当Provider使用`pact`的profile运行时，它会在URL`/pactStateChange`上接受一个POST请求，来修改`.nationality`的值，再具体一些，可以被设置成默认值Japan，或者null。**
+
 ### Nanoha端的契约测试
+Nanoha端的测试文件和Miku端的差不多，我们使用Lambda DSL，在一个文件里面写两个TestCase。
+```java
+public class NationalityPactTest {
+    PactSpecVersion pactSpecVersion;
+
+    private void checkResult(PactVerificationResult result) {
+        if (result instanceof PactVerificationResult.Error) {
+            throw new RuntimeException(((PactVerificationResult.Error)result).getError());
+        }
+        assertEquals(PactVerificationResult.Ok.INSTANCE, result);
+    }
+
+    @Test
+    public void testWithNationality() {
+        Map<String, String> headers = new HashMap<String, String>();
+        headers.put("Content-Type", "application/json;charset=UTF-8");
+
+        DslPart body = newJsonBody((root) -> {
+            root.numberType("salary");
+            root.stringValue("fullName", "Takamachi Nanoha");
+            root.stringValue("nationality", "Japan");
+            root.object("contact", (contactObject) -> {
+                contactObject.stringMatcher("Email", ".*@ariman.com", "takamachi.nanoha@ariman.com");
+                contactObject.stringType("Phone Number", "9090940");
+            });
+        }).build();
+
+        RequestResponsePact pact = ConsumerPactBuilder
+            .consumer("ConsumerNanohaWithNationality")
+            .hasPactWith("ExampleProvider")
+            .given("")
+            .uponReceiving("Query fullName is Nanoha")
+                .path("/information")
+                .query("fullName=Nanoha")
+                .method("GET")
+            .willRespondWith()
+                .headers(headers)
+                .status(200)
+                .body(body)
+            .toPact();
+
+        MockProviderConfig config = MockProviderConfig.createDefault(this.pactSpecVersion.V3);
+        PactVerificationResult result = runConsumerTest(pact, config, mockServer -> {
+            ProviderHandler providerHandler = new ProviderHandler();
+            providerHandler.setBackendURL(mockServer.getUrl());
+            Information information = providerHandler.getInformation();
+            assertEquals(information.getName(), "Takamachi Nanoha");
+            assertEquals(information.getNationality(), "Japan");
+        });
+
+        checkResult(result);
+    }
+
+    @Test
+    public void testNoNationality() {
+        Map<String, String> headers = new HashMap<String, String>();
+        headers.put("Content-Type", "application/json;charset=UTF-8");
+
+        DslPart body = newJsonBody((root) -> {
+            root.numberType("salary");
+            root.stringValue("fullName", "Takamachi Nanoha");
+            root.stringValue("nationality", null);
+            root.object("contact", (contactObject) -> {
+                contactObject.stringMatcher("Email", ".*@ariman.com", "takamachi.nanoha@ariman.com");
+                contactObject.stringType("Phone Number", "9090940");
+            });
+        }).build();
+
+        RequestResponsePact pact = ConsumerPactBuilder
+            .consumer("ConsumerNanohaNoNationality")
+            .hasPactWith("ExampleProvider")
+            .given("No nationality")
+            .uponReceiving("Query fullName is Nanoha")
+                .path("/information")
+                .query("fullName=Nanoha")
+                .method("GET")
+            .willRespondWith()
+                .headers(headers)
+                .status(200)
+                .body(body)
+            .toPact();
+
+        MockProviderConfig config = MockProviderConfig.createDefault(this.pactSpecVersion.V3);
+        PactVerificationResult result = runConsumerTest(pact, config, mockServer -> {
+            ProviderHandler providerHandler = new ProviderHandler();
+            providerHandler.setBackendURL(mockServer.getUrl());
+            Information information = providerHandler.getInformation();
+            assertEquals(information.getName(), "Takamachi Nanoha");
+            assertEquals(information.getNationality(), null);
+        });
+
+        checkResult(result);
+    }
+}
+```
+这两个TestCase的主要区别是：
+- 我们对`nationality`的期望一个Japan，一个是null；
+- 通过`.given()`方法来指定我们的ProviderState，从而控制在Provider端运行测试之前修改对应`nationality`的值；
+
+Consumer端运行测试的方式还是一样的：
+```commandline
+./gradlew :example-consumer-nanoha:clean test
+```
+然后，就可以在`Pacts\Nanoha`路径下面找到生成的契约文件了。
+
 ### Provider端的契约测试
+
 #### 启动Provider的应用
+上面我们提到，运行Provider需要使用`pact`的profile，所以现在启动Provider的命令会有所不同：
+```commandline
+export SPRING_PROFILES_ACTIVE=pact
+./gradlew :example-provider:bootRun
+```
+> 如果你之前已经启动了Provider，记得要kill掉哟，不然会端口占用的啦~
+
 #### 修改Gradle配置文件
+我们在Consumer的契约中，使用`.given()`指定了ProviderState，但说到底，那里指定的只是一个字符串而已，真正干活的，还是Gradle，所以我们需要Gradle的相关配置：
+`build.gralde`
+```groovy
+
+    hasPactWith('Nanoha - With Nantionality') {
+        pactSource = file("$rootDir/Pacts/Nanoha/ConsumerNanohaWithNationality-ExampleProvider.json")
+    }
+
+    hasPactWith('Nanoha - No Nantionality') {
+        stateChangeUrl = new URL('http://localhost:8080/pactStateChange')
+        pactSource = file("$rootDir/Pacts/Nanoha/ConsumerNanohaNoNationality-ExampleProvider.json")
+    }
+```
+这里，我们取消了之前对Nanoha的注释。第一个TestCase我们会测试使用默认的nationality=Japan。第二个TestCase，我们指定了`stateChangeUrl`，它会保证在测试运行之前，先发送一个POST请求给这个URL，然后我们的TestCase测试nationality=null。
+
 #### 执行契约测试
+同样的方法执行契约测试：
+```commandline
+./gradlew :example-provider:pactVerify
+```
+然后你就可以在命令行下面看见对应的输出了。
 
 ## 验证我们的测试
+如果你一字不漏的玩儿到了这里，那么恭喜你，你应该可以在自己的项目里去实践Pact了（好了，那个抄椅子的同学，你不用说了，我知道，你们用的是Python╮(╯_╰)╭）。
+
+但是在离开本示例之前，还是发扬一下我们的测试精神吧，比如，搞点小破坏~
+
+在Provider返回的body里面，Miku和Nanoha都有使用字段`.name`。如果某天，Provider想把`.name`改成`.fullname`，估计Miku和Nanoha就要跪了。这是一种经典的契约破坏场景，用来做我们的玩儿法再适合不过了。可是要那么玩儿的话，需要修改Provider的好些代码，想必不少测试的同学，特别是对Spring Boot不了解的同学就又要拍砖了。
+
+所以还是让我们来个简单的吧，比如霸王硬上弓，直接把`.name`给miku了，哦，不对，是null了。
+`provider.InformationController`
+```java
+@RestController
+public class InformationController {
+        ...
+        information.setName(null);
+        return information;
+    }
+}
+```
+> 喂，喂，干坐着干嘛，动手改呀！这行代码可是需要你们自己加上去的哟，即便它已经简单到只有一行。然后，那个写Python的，别告诉我你看不懂`information.setName(null)`，Okay？￣▽￣
+
+然后，重新运行我们的契约测试，你就能看到一些长得像这样的东东啦~：
+```commandline
+...
+
+Verifying a pact between Nanoha - No Nantionality and ExampleProvider
+  [Using File /Users/ariman/Workspace/Pacting/pact-jvm-example/Pacts/Nanoha/ConsumerNanohaNoNationality-ExampleProvider.json]
+  Given No nationality
+  Query name is Nanoha
+    returns a response which
+      has status code 200 (OK)
+      includes headers
+        "Content-Type" with value "application/json;charset=UTF-8" (OK)
+      has a matching body (FAILED)
+
+Failures:
+
+0) Verifying a pact between Miku - Base contract and ExampleProvider - Pact JVM example Pact interactionVerifying a pact between Miku - Base contract and ExampleProvider - Pact JVM example Pact interaction Given  returns a response which has a matching body
+      $.name -> Expected 'Hatsune Miku' but received null
+
+...
+```
 
 
 
