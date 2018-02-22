@@ -762,7 +762,7 @@ public class InformationController {
 ```
 > 喂，喂，干坐着干嘛，动手改呀！这行代码可是需要你们自己加上去的哟，即便它已经简单到只有一行。然后，那个写Python的，别告诉我你看不懂`information.setName(null)`，Okay？￣▽￣
 
-然后，重新运行我们的契约测试，你就能看到一些长得像这样的东东啦~：
+最后，重新运行我们的契约测试，你就能看到一些长得像这样的东东啦~：
 ```commandline
 ...
 
