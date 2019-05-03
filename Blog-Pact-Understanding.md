@@ -77,12 +77,47 @@ Mock的？契约测试是服务的接口测试还是集成测试？等等。所�
 schema，不是契约`。一个列子，中介打印了一份合同，上面写好了房屋租赁的全部信息，但在房东和租客都签字之前，这份"合同"并不具有任何效力，所以它
 根本就不是一份有意义的合同，法律上，它叫"要约"。（...感谢我大学的法律老师，我居然还记得这个词儿）
 
-现在，这里有三份契约，consumer A消费provider的age和gender，consumer B消费name、age和gender，consumer C消费name和gender。就目前
-provider提供的schema来说，没有任何问题，大家相安无事。
+现在，这里有三份契约（对应的，就应该有三份契约测试），consumer A消费provider的age和gender，consumer B消费name、age和gender，
+consumer C消费name和gender。就目前provider提供的schema来说，没有任何问题，大家相安无事。
 
+某日，因为业务需求，consumer C期望provider提供更加详细的name信息，包括firstName和lastName。这个需求对provider并不困难，所以，provider
+打算对schema做类似下面的修改。
 
+![](images/contract-test-thinking/multi-consumers-2.png)
 
+这样的修改，`很明显`，对consumer C是需要的，对consumer A无所谓，但对consumer B却是不可接受的，属于典型的契约破坏。此时，provider和
+consumer B之间的契约测试就会挂掉，从而对provider提出预警（至于，剩下的，怎么协调和consumer B的兼容问题，就不是契约测试关注的问题，那需
+要的是团队间的communication）。
 
+上面这个示例中的一些要素，可以帮助我们发掘契约测试的价值点：
+
+**单个provider多个consumer** --- 要体现契约测试异于集成测试的价值，一定是在"单个provider对应多个consumer"的架构下来说的。因为，在只
+有一个provider和一个consumer的架构下，只存在一份契约，对该契约内容的任何修改，对这对provider和consumer来说，都是显而易见的，那么就不会
+出现契约破坏的情况。说人话，就是，如果是consumer提出要修改契约，consumer一定知道改怎么消费新的契约内容；如果是provider提出修改契约，对于
+唯一的一个consumer，provider能很方便的告知其将要对契约的修改。并且，在这种情况下，集成测试往往就已经完整的达到了契约测试的目的。
+
+而在单个provider对应多个consumer的架构下，情况就大不一样了。provider和consumer C之间的契约修改，对consumer A无感，对consumer B却是
+契约破坏，对此，集成测试是无能为力的。仔细来看，这里有4个service，就会有4个集成测试。但每个集成测试都只会关注自己的业务正确性，具体来说：
+* consumer A，因为不受影响，所以A的集成测试没有任何变化；
+* consumer C，因为是契约修改的提出者，所以它会在provider提供新的schema后修改自己的集成测试，没有问题；
+* provider，如果接受了consumer C的需求，大摇大摆地修改了schema，它也会相应的修改自己的集成测试，因为对provider来说，这个变更是正常的业务
+需求，也没有问题；
+* consumer B，最倒霉，啥都没干就挂了，当然，它的集成测试会捕捉到这个failure，但那都是在provider的契约破坏生效之后的事情了，能做的也只有
+亡羊补牢。
+
+可见，虽然4个集成测试都各司其职，但都不能对这个契约破坏的问题做到防患于未然！只有契约测试，才是这个问题的最佳答案！这就是契约测试最大的价值，
+它只会在"单provider多consumer"的环境下（这是微服务的常见场景，但不是必然场景），才能发挥出来。
+
+**很显然，对consumer A无害，但对consumer B却是契约破坏** --- `很显然`，仅仅是对于我们这个简单得不能再简单的示例而言，真正的业务场景下，
+特别是一些复杂的微服务集群，又或者是一些时间跨度很长的系统，对于某个provider，到底有多少个consumer？而你的每一处修改，又到底会对哪些
+consumer的契约造成怎样的影响？这些往往都是很难确定的问题。我最近所在的一个集团项目上，一个搜索地址的基础服务provider，有十个左右的consumer，
+其中有八个consumer没有契约测试，就不清楚它们对provider的API具体是如何消费的，所以每次provider要更新，就得八方去通知这些consumer的团队
+来做回归测试。有时，一点小小的修改，回归测试一分钟就可以搞定，但人肉联系团队却会花上好几天......
+
+如果每个consumer都能和provider建立契约测试（这里我们暂且不考虑负载和去重的问题），通过类似Pact Broker这样的实践，我们就能很好的解决这些
+效率问题。
+
+![](images/contract-test-thinking/contracts.png)
 
 ## 契约测试和接口测试、集成测试的区别
 
