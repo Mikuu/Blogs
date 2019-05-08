@@ -57,7 +57,7 @@ Mock的？契约测试是服务的接口测试还是集成测试？等等。所�
 那再问，为什么我们还要做契约测试呢？真正能够回答这个问题的，不是契约测试的目的，而是契约测试可以带来的价值！
 
 ### 契约测试的价值
-那什么是契约测试的价值呢？要说清楚契约测试的价值，就需要准确认识契约测试的精髓--"消费者驱动"。
+那什么是契约测试的价值呢？要说清楚契约测试的价值，就需要准确认识契约测试的精髓--"消费者驱动"。？？？？？？？？？？？？？？？？？？？？？
 
 消费者驱动的字面含义，大家都清楚，但往往容易被忽略的是`被驱动的对象`。在讨论契约测试的范畴里，消费者驱动述及的对象不是契约，而是契约测试。
 换句话说，我们关注的是`消费者驱动的契约测试`，而不是`消费者驱动的契约`。由此，"契约文件应该由consumer来写？还是provider来写？还是双方
@@ -91,8 +91,13 @@ consumer B之间的契约测试就会挂掉，从而对provider提出预警（�
 
 上面这个示例中的一些细节，可以帮助我们发掘契约测试的价值点：
 
+#### "consumer A没有使用name，consumer C没有使用age"，
+基于消费者驱动的契约测试，契约的内容由consumer提供，其内容体现的是各个consumer对provider提供的schema的消费需求。这里的需求，不光包含consumer
+"需要什么"，还包含consumer"不需要什么"。这是非常有意义的，因为当你发现provider提供的schema的某些部分不被任何consumer消费时，就代表
+provider可以对schema的这些内容做任意的修改，完全不必担心会影响到任何consumer。这是契约测试非常重要的价值点。
+
 #### "单个provider多个consumer"，
-要体现契约测试异于集成测试的价值，一定是在"单个provider对应多个consumer"的架构下来说的。因为，在只
+要最大化的体现契约测试异于集成测试的价值，一定是在"单个provider对应多个consumer"的架构下来说的。因为，在只
 有一个provider和一个consumer的架构下，只存在一份契约，对该契约内容的任何修改，对这对provider和consumer来说，都是显而易见的，那么就不会
 出现契约破坏的情况。说人话，就是，如果是consumer提出要修改契约，consumer一定知道改怎么消费新的契约内容；如果是provider提出修改契约，对于
 唯一的一个consumer，provider能很方便的告知其将要对契约的修改。并且，在这种情况下，集成测试往往就已经完整的达到了契约测试的目的。
@@ -215,7 +220,18 @@ consumer就可以有多少个契约测试；
 
 ## 关于Pact和Spring Cloud Contract
 
-"用Pact还是Spring Cloud Contract？"，这是最后一个经常被讨论的话题。它背后折射的却是另一个非常重要的概念博弈：**契约测试和基于契约的测试**。
+"用Pact还是Spring Cloud Contract？"，这是另一个经常被讨论的话题。它背后折射的却是另一个非常重要的概念博弈：**契约测试 vs 基于契约的测试（契约驱动的测试）**。
+
+Pact的理念是消费者驱动的契约测试。什么是契约测试呢？目前，我没有找到任何"权威"的定义。其实，面向工程实践的理论，也许根本就没有权威，有的只是
+最适用于自身的实践总结。即便如此，我还是希望以个人的角度，提供我自己的解读：
+
+* 如果你google搜索contract test，你得到的第一个答案肯定是Martin Fowler在2011年的[这篇文章](https://martinfowler.com/bliki/ContractTest.html)，但遗憾的是，老马这里讨论的契约测试，是解决在集成测试中，如何保证测试替身有效性的问题的，它和我们今天讨论的契约测试并不是一回事。但是，如果不去关注契约测试的内容，而单论"契约测试"的定义的话，老马的文章其实表述了一个很有价值的观点，那就是"契约是需要测试的"，这点是非常有意义的。
+
+* Pact的官方文档，是另一个可以帮助我们理解契约测试的地方。它对契约测试给出了这样的定义：`Pact is a contract testing tool. Contract testing is a way to ensure that services (such as an API provider and a client) can communicate with each other.`，这里面需要关注的重点是`communicate`，它给出了Pact对契约测试范畴（scope）的定义。
+
+
+
+![](images/contract-test-thinking/pact-springCloudContract.png)
 
 
 
